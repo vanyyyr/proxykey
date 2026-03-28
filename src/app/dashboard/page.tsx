@@ -306,7 +306,7 @@ export default function ClientDashboard() {
 
   /* ─── LOGIN SCREEN ─── */
   if (!user) {
-    const botUrl = `https://t.me/proxykeybot?start=login_${loginToken}`;
+    const botUrl = `https://t.me/proxytgkeybot?start=login_${loginToken}`;
 
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
@@ -351,7 +351,7 @@ export default function ClientDashboard() {
                 </span>
               </div>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                Откройте @proxykeybot в Telegram и нажмите «Начать»
+                Откройте @proxytgkeybot в Telegram и нажмите «Начать»
               </p>
               <a href={botUrl} target="_blank" rel="noopener noreferrer" style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
