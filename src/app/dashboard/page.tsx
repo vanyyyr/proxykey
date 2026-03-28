@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 
 function countryFlag(iso2: string | null | undefined): string {
@@ -12,6 +12,101 @@ function countryFlag(iso2: string | null | undefined): string {
   } catch {
     return '\u{1F310}';
   }
+}
+
+/* ─── Telegram Login Widget ─── */
+function TelegramWidget() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    // Remove any existing children
+    containerRef.current.innerHTML = '';
+
+    const script = document.createElement('script');
+    script.src = 'https://telegram.org/js/telegram-widget.js?22';
+    script.async = true;
+    script.setAttribute('data-telegram-login', 'proxytgkeybot');
+    script.setAttribute('data-size', 'large');
+    script.setAttribute('data-radius', '12');
+    script.setAttribute('data-request-access', 'write');
+    script.setAttribute('data-auth-url', `${window.location.origin}/api/auth/telegram/callback`);
+    script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+
+    (window as any).onTelegramAuth = async (user: any) => {
+      try {
+        const res = await fetch('/api/auth/telegram/callback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(user),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.redirect) {
+            window.location.href = data.redirect;
+          } else {
+            window.location.reload();
+          }
+        }
+      } catch (e) {
+        console.error('Auth error:', e);
+      }
+    };
+
+    script.onerror = () => setError(true);
+    containerRef.current.appendChild(script);
+
+    // Timeout fallback
+    const timer = setTimeout(() => {
+      if (containerRef.current && containerRef.current.children.length > 0) {
+        const iframe = containerRef.current.querySelector('iframe');
+        if (!iframe) setError(true);
+      }
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (error) {
+    return (
+      <div style={{
+        padding: '16px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)',
+        textAlign: 'center'
+      }}>
+        <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
+          Виджет не загрузился
+        </p>
+        <a href="https://t.me/proxytgkeybot" target="_blank" rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '10px 20px', background: '#0088cc', color: '#fff',
+            borderRadius: 'var(--radius-pill)', textDecoration: 'none',
+            fontWeight: 600, fontSize: '0.8125rem'
+          }}>
+          Открыть @proxytgkeybot
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={containerRef} style={{
+      minHeight: 50, display: 'flex', alignItems: 'center', justifyContent: 'center'
+    }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        color: 'var(--text-tertiary)', fontSize: '0.8125rem'
+      }}>
+        <div style={{
+          width: 16, height: 16, border: '2px solid var(--separator)',
+          borderTopColor: 'var(--accent)', borderRadius: '50%',
+          animation: 'spin 0.7s linear infinite'
+        }} />
+        Загрузка...
+      </div>
+    </div>
+  );
 }
 
 /* ─── Buy Modal ─── */
@@ -214,38 +309,6 @@ export default function ClientDashboard() {
   const [partnerData, setPartnerData] = useState<any>(null);
   const [copiedRef, setCopiedRef] = useState(false);
   const [copiedProxy, setCopiedProxy] = useState<string | null>(null);
-  const [waitingAuth, setWaitingAuth] = useState(false);
-  const [loginToken, setLoginToken] = useState('');
-
-  // Generate token on client side (SSR-safe)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const urlToken = new URLSearchParams(window.location.search).get('token');
-    if (urlToken) {
-      setLoginToken(urlToken);
-      setWaitingAuth(true);
-    } else {
-      setLoginToken(Math.random().toString(36).substring(2, 10) + Date.now().toString(36));
-    }
-  }, []);
-
-  // Poll for authentication when waiting
-  useEffect(() => {
-    if (!waitingAuth || !loginToken) return;
-    const checkAuth = async () => {
-      try {
-        const res = await fetch(`/api/auth/telegram?token=${loginToken}`);
-        const data = await res.json();
-        if (data.authenticated) {
-          window.location.href = '/dashboard';
-        }
-      } catch {}
-    };
-    const interval = setInterval(checkAuth, 2000);
-    checkAuth();
-    const timeout = setTimeout(() => { clearInterval(interval); setWaitingAuth(false); }, 60000);
-    return () => { clearInterval(interval); clearTimeout(timeout); };
-  }, [waitingAuth, loginToken]);
 
   const fetchUserData = useCallback(() => {
     fetch('/api/user/me')
@@ -306,8 +369,6 @@ export default function ClientDashboard() {
 
   /* ─── LOGIN SCREEN ─── */
   if (!user) {
-    const botUrl = `https://t.me/proxytgkeybot?start=login_${loginToken}`;
-
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
         {/* Logo */}
@@ -330,58 +391,10 @@ export default function ClientDashboard() {
             Вход в кабинет
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem', marginBottom: 28 }}>
-            {waitingAuth
-              ? 'Подтвердите вход в Telegram-боте, затем вернитесь на эту страницу'
-              : 'Нажмите кнопку ниже, чтобы авторизоваться через Telegram'}
+            Авторизуйтесь через Telegram
           </p>
 
-          {waitingAuth ? (
-            <div>
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                padding: '20px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)', marginBottom: 16
-              }}>
-                <div style={{
-                  width: 20, height: 20, border: '2.5px solid var(--separator)',
-                  borderTopColor: 'var(--accent)', borderRadius: '50%',
-                  animation: 'spin 0.7s linear infinite'
-                }} />
-                <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                  Ожидание подтверждения...
-                </span>
-              </div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                Откройте @proxytgkeybot в Telegram и нажмите «Начать»
-              </p>
-              <a href={botUrl} target="_blank" rel="noopener noreferrer" style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                marginTop: 12, padding: '8px 16px', background: '#0088cc', color: '#fff',
-                borderRadius: 'var(--radius-pill)', textDecoration: 'none',
-                fontWeight: 600, fontSize: '0.8125rem'
-              }}>
-                Открыть бота
-              </a>
-            </div>
-          ) : (
-            <a href={botUrl} target="_blank" rel="noopener noreferrer"
-              onClick={() => setWaitingAuth(true)}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 10,
-                padding: '14px 32px', background: '#0088cc', color: '#fff',
-                borderRadius: 'var(--radius-pill)', textDecoration: 'none',
-                fontWeight: 600, fontSize: '1rem',
-                boxShadow: '0 4px 16px rgba(0, 136, 204, 0.3)',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(0, 136, 204, 0.4)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 136, 204, 0.3)'; }}
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.568 8.16l-1.776 8.368c-.133.595-.488.74-.992.46l-2.74-2.018-1.324 1.276c-.147.147-.27.27-.554.27l.198-2.816 5.126-4.632c.223-.198-.049-.306-.345-.109l-6.34 3.988-2.728-.85c-.594-.186-.606-.594.124-.878l10.656-4.11c.493-.178.926.12.76.87z"/>
-              </svg>
-              Войти через Telegram
-            </a>
-          )}
+          <TelegramWidget />
 
           <p style={{ marginTop: 28, fontSize: '0.75rem', color: 'var(--text-tertiary)', lineHeight: 1.6 }}>
             Нажимая кнопку входа, вы соглашаетесь
