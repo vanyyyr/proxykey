@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  proxykey-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: proxykey-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://proxykey:secretpassword@proxykey-db:5432/proxykeydb?schema=public
+      - JWT_SECRET=your-super-secret-jwt-key-change-me
+      - TELEGRAM_BOT_TOKEN=your_bot_token_here
+      - NEXT_PUBLIC_SITE_URL=https://your-domain.com
+      - MARZBAN_URL=http://your-marzban-url.com
+      - MARZBAN_USERNAME=admin
+      - MARZBAN_PASSWORD=admin
+    depends_on:
+      - proxykey-db
+    networks:
+      - proxykey-network
+
+  proxykey-db:
+    image: postgres:15-alpine
+    container_name: proxykey-db
+    restart: always
+    environment:
+      - POSTGRES_USER=proxykey
+      - POSTGRES_PASSWORD=secretpassword
+      - POSTGRES_DB=proxykeydb
+    volumes:
+      - proxykey-db-data:/var/lib/postgresql/data
+    networks:
+      - proxykey-network
+
+networks:
+  proxykey-network:
+    driver: bridge
+
+volumes:
+  proxykey-db-data:

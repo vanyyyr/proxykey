@@ -1,0 +1,120 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                 String             @id @default(cuid())
+  telegramId         String?            @unique
+  username           String?
+  name               String?
+  email              String?            @unique
+  balance            Float              @default(0)
+  verificationsCount Int                @default(0)
+  role               String             @default("USER") // USER, ADMIN
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  // Relations
+  proxyKeys          ProxyKey[]
+  payments           Payment[]
+  
+  // Partner System
+  partnerProfile     Partner?
+  referrals          User[]             @relation("Referrals")
+  referrer           User?              @relation("Referrals", fields: [referrerId], references: [id])
+  referrerId         String?
+}
+
+model ProxyKey {
+  id              String   @id @default(cuid())
+  key             String   @unique // connection string (ip:port:user:pass)
+  proxyExternalId String?  @unique // ID прокси в системе px6.link
+  protocol        String
+  ip              String
+  port            Int
+  login           String
+  password        String
+  type            String   @default("http") // http, socks
+  country         String?  // ISO2: ru, us, de...
+  version         Int      @default(4) // 4=IPv4, 3=IPv4 Shared, 6=IPv6
+  
+  status    String   @default("ACTIVE") // ACTIVE, EXPIRED
+  
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  
+  assignedAt DateTime?
+  expiresAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  amount      Float
+  status      String   @default("PENDING") // PENDING, COMPLETED, FAILED
+  method      String   // YooMoney, NOWPayments, Robokassa
+  
+  transactionId String? // External transaction ID
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Partner {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  
+  earnedBalance   Float    @default(0)
+  pendingBalance  Float    @default(0)
+  
+  withdrawals     WithdrawalRequest[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model WithdrawalRequest {
+  id          String   @id @default(cuid())
+  amount      Float
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  wallet      String   // Wallet address/number
+
+  partnerId   String
+  partner     Partner  @relation(fields: [partnerId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Settings {
+  key   String @id
+  value String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Mailing {
+  id        String   @id @default(cuid())
+  message   String
+  filters   String   // JSON string of used filters
+  audienceCount Int
+  status    String   @default("COMPLETED")
+
+  createdAt DateTime @default(now())
+}
