@@ -94,19 +94,19 @@ export default function StatisticsAdmin() {
       <h1 className="section-title">📊 Статистика проекта</h1>
       
       <div className="flex-row" style={{ marginBottom: '32px' }}>
-        <div className="admin-card glass-panel" style={{ padding: '32px', flex: 1, textAlign: 'center' }}>
+        <div className="admin-card glass-card" style={{ padding: '32px', flex: 1, textAlign: 'center' }}>
           <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Общий доход</div>
           <div style={{ fontSize: '3rem', fontWeight: 700, letterSpacing: '-0.04em', color: 'var(--text-primary)' }}>
             {data.summary.totalIncome.toLocaleString('ru-RU')} ₽
           </div>
         </div>
-        <div className="admin-card glass-panel" style={{ padding: '32px', flex: 1, textAlign: 'center' }}>
+        <div className="admin-card glass-card" style={{ padding: '32px', flex: 1, textAlign: 'center' }}>
           <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Всего пользователей</div>
           <div style={{ fontSize: '3rem', fontWeight: 700, letterSpacing: '-0.04em', color: 'var(--text-primary)' }}>
             {data.summary.totalUsers}
           </div>
         </div>
-        <div className="admin-card glass-panel" style={{ padding: '32px', flex: 1, textAlign: 'center' }}>
+        <div className="admin-card glass-card" style={{ padding: '32px', flex: 1, textAlign: 'center' }}>
           <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Активные прокси</div>
           <div style={{ fontSize: '3rem', fontWeight: 700, letterSpacing: '-0.04em', color: 'var(--text-primary)' }}>
             {data.summary.activeProxies}
@@ -125,8 +125,8 @@ export default function StatisticsAdmin() {
               border:
                 period === d
                   ? '2px solid var(--accent)'
-                  : '1px solid var(--separator)',
-              background: period === d ? 'var(--bg-subtle)' : 'transparent',
+                  : '1px solid var(--border)',
+              background: period === d ? 'rgba(0, 0, 0, 0.02)' : 'transparent',
               color: 'var(--text-primary)',
               cursor: 'pointer',
               fontWeight: period === d ? 600 : 400,
@@ -137,7 +137,7 @@ export default function StatisticsAdmin() {
         ))}
       </div>
 
-      <div className="admin-card glass-panel" style={{ padding: '40px' }}>
+      <div className="admin-card glass-card" style={{ padding: '40px' }}>
         <h3 style={{ marginBottom: '32px', fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)' }}>Доход за последние {period} дней (₽)</h3>
         <div style={{ height: '400px' }}>
           <Line options={options} data={chartData} />

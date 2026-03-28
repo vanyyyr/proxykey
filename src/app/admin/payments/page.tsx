@@ -37,22 +37,22 @@ export default function PaymentsAdmin() {
 
       {/* Summary cards */}
       <div className="flex-row" style={{ marginBottom: '32px' }}>
-        <div className="admin-card glass-panel" style={{ padding: '24px', textAlign: 'center' }}>
+        <div className="admin-card glass-card" style={{ padding: '24px', textAlign: 'center' }}>
           <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Всего платежей</div>
           <div style={{ fontSize: '2rem', fontWeight: 700 }}>{payments.length}</div>
         </div>
-        <div className="admin-card glass-panel" style={{ padding: '24px', textAlign: 'center' }}>
+        <div className="admin-card glass-card" style={{ padding: '24px', textAlign: 'center' }}>
           <div style={{ color: 'var(--success)', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Выполнено</div>
           <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--success)' }}>{totalCompleted} ₽</div>
         </div>
-        <div className="admin-card glass-panel" style={{ padding: '24px', textAlign: 'center' }}>
+        <div className="admin-card glass-card" style={{ padding: '24px', textAlign: 'center' }}>
           <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Ожидание</div>
           <div style={{ fontSize: '2rem', fontWeight: 700 }}>{payments.filter(p => p.status === 'PENDING').length}</div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="admin-card glass-panel" style={{ padding: '32px' }}>
+      <div className="admin-card glass-card" style={{ padding: '32px' }}>
         <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
           {[
             { value: '', label: 'Все' },
@@ -64,8 +64,8 @@ export default function PaymentsAdmin() {
               key={f.value}
               onClick={() => setFilter(f.value)}
               style={{
-                padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--separator)',
-                background: filter === f.value ? 'var(--bg-subtle)' : 'transparent',
+                padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)',
+                background: filter === f.value ? 'rgba(0, 0, 0, 0.02)' : 'transparent',
                 color: filter === f.value ? 'var(--text-primary)' : 'var(--text-secondary)',
                 fontWeight: filter === f.value ? 600 : 400, cursor: 'pointer', fontSize: '0.85rem',
               }}

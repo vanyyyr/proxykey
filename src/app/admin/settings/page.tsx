@@ -69,7 +69,7 @@ export default function DashboardSettings() {
         </div>
       )}
 
-      <div className="admin-card glass-panel" style={{ padding: '32px' }}>
+      <div className="admin-card glass-card" style={{ padding: '32px' }}>
         <h2 className="section-title">🔐 Авторизация</h2>
         <div className="form-group">
           <label className="form-label">Пароль администратора</label>
@@ -83,7 +83,7 @@ export default function DashboardSettings() {
         </div>
       </div>
 
-      <div className="admin-card glass-panel" style={{ padding: '32px' }}>
+      <div className="admin-card glass-card" style={{ padding: '32px' }}>
         <h2 className="section-title">📱 Telegram</h2>
         <div className="form-group">
           <label className="form-label">Channel ID</label>
@@ -100,7 +100,7 @@ export default function DashboardSettings() {
         </div>
       </div>
 
-      <div className="admin-card glass-panel" style={{ padding: '32px' }}>
+      <div className="admin-card glass-card" style={{ padding: '32px' }}>
         <h2 className="section-title">💰 Финансы & Платёжные системы</h2>
         
         <div className="flex-row" style={{ marginBottom: '24px' }}>
@@ -142,7 +142,7 @@ export default function DashboardSettings() {
           </div>
         </div>
 
-        <div style={{ marginTop: '32px', padding: '20px', background: 'var(--bg-subtle)', border: '1px solid var(--separator)', borderRadius: 'var(--radius-md)' }}>
+        <div style={{ marginTop: '32px', padding: '20px', background: 'rgba(0, 0, 0, 0.02)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
           <h4 style={{ marginBottom: '8px', fontWeight: 600 }}>YooMoney Webhook</h4>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
             Укажите этот URL в настройках YooMoney: <br/>
@@ -153,14 +153,14 @@ export default function DashboardSettings() {
         </div>
       </div>
 
-      <div className="admin-card glass-panel" style={{ padding: '32px' }}>
+      <div className="admin-card glass-card" style={{ padding: '32px' }}>
         <h2 className="section-title">🌐 Сайт</h2>
         <div className="form-group">
           <label className="form-label">Base URL (Домен)</label>
           <input type="text" className="form-input" value={settings.site_base_url || ''} onChange={(e) => handleChange('site_base_url', e.target.value)} />
         </div>
         
-        <div style={{ border: '1px solid var(--separator)', background: 'var(--bg-subtle)', padding: '24px', borderRadius: 'var(--radius-md)', marginTop: '32px' }}>
+        <div style={{ border: '1px solid var(--border)', background: 'rgba(0, 0, 0, 0.02)', padding: '24px', borderRadius: 'var(--radius-md)', marginTop: '32px' }}>
           <h3 style={{ marginBottom: '16px', fontSize: '1.1rem', fontWeight: 600 }}>🔧 Режим технического обслуживания</h3>
           <div className="form-group">
             <label className="form-label">Текст сообщения на странице ТО:</label>
@@ -169,7 +169,7 @@ export default function DashboardSettings() {
         </div>
       </div>
 
-      <div className="admin-card glass-panel" style={{ padding: '32px', marginBottom: '80px' }}>
+      <div className="admin-card glass-card" style={{ padding: '32px', marginBottom: '80px' }}>
         <h2 className="section-title">🔧 Техническое</h2>
         <div className="form-group">
           <label className="form-label">Ключ журнала отладки</label>

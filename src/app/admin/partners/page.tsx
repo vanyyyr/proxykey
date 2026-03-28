@@ -39,22 +39,22 @@ export default function PartnersAdmin() {
   return (
     <div className="partners-page">
       <div className="flex-row" style={{ marginBottom: '24px' }}>
-        <div className="admin-card glass-panel" style={{ padding: '24px' }}>
+        <div className="admin-card glass-card" style={{ padding: '24px' }}>
           <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Партнёров</div>
           <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.totalPartners}</div>
         </div>
-        <div className="admin-card glass-panel" style={{ padding: '24px' }}>
+        <div className="admin-card glass-card" style={{ padding: '24px' }}>
           <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>К выплате</div>
           <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.totalToPay} ₽</div>
         </div>
-        <div className="admin-card glass-panel" style={{ padding: '24px' }}>
+        <div className="admin-card glass-card" style={{ padding: '24px' }}>
           <div style={{ color: 'var(--success)', fontSize: '0.875rem' }}>Выплачено</div>
           <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>{stats.totalEarned - stats.totalToPay} ₽</div>
         </div>
       </div>
 
       {requests.length > 0 && (
-        <div className="admin-card glass-panel" style={{ padding: '24px' }}>
+        <div className="admin-card glass-card" style={{ padding: '24px' }}>
           <h2 className="section-title">💸 Запросы на вывод</h2>
           <div className="admin-table-container">
             <table className="admin-table">
@@ -88,7 +88,7 @@ export default function PartnersAdmin() {
         </div>
       )}
 
-      <div className="admin-card glass-panel" style={{ padding: '24px' }}>
+      <div className="admin-card glass-card" style={{ padding: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
           <h2 className="section-title" style={{ marginBottom: 0 }}>Список партнёров</h2>
           <input type="text" className="form-input" placeholder="🔍 Поиск" style={{ width: '300px' }} />

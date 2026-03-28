@@ -172,7 +172,7 @@ export default function AdminDashboard() {
       {/* Stats Cards */}
       <div className="flex-row" style={{ marginBottom: '32px' }}>
         <div
-          className="admin-card glass-panel"
+          className="admin-card glass-card"
           style={{ padding: '24px', textAlign: 'center' }}
         >
           <div
@@ -189,7 +189,7 @@ export default function AdminDashboard() {
           <div style={{ fontSize: '2.5rem', fontWeight: 700 }}>{data.totalUsers}</div>
         </div>
         <div
-          className="admin-card glass-panel"
+          className="admin-card glass-card"
           style={{ padding: '24px', textAlign: 'center' }}
         >
           <div
@@ -206,7 +206,7 @@ export default function AdminDashboard() {
           <div style={{ fontSize: '2.5rem', fontWeight: 700 }}>{data.activeProxies}</div>
         </div>
         <div
-          className="admin-card glass-panel"
+          className="admin-card glass-card"
           style={{ padding: '24px', textAlign: 'center' }}
         >
           <div
@@ -231,7 +231,7 @@ export default function AdminDashboard() {
           </div>
         </div>
         <div
-          className="admin-card glass-panel"
+          className="admin-card glass-card"
           style={{ padding: '24px', textAlign: 'center' }}
         >
           <div
@@ -259,7 +259,7 @@ export default function AdminDashboard() {
 
       {/* Chart */}
       <div
-        className="admin-card glass-panel"
+        className="admin-card glass-card"
         style={{ padding: '32px', marginBottom: '32px' }}
       >
         <h3 style={{ marginBottom: '24px', fontSize: '1.1rem', fontWeight: 600 }}>
@@ -272,7 +272,7 @@ export default function AdminDashboard() {
 
       {/* Recent Activity */}
       <div className="flex-row">
-        <div className="admin-card glass-panel" style={{ padding: '24px', flex: 1 }}>
+        <div className="admin-card glass-card" style={{ padding: '24px', flex: 1 }}>
           <h3 style={{ marginBottom: '16px', fontSize: '1rem', fontWeight: 600 }}>
             Последние платежи
           </h3>
@@ -285,7 +285,7 @@ export default function AdminDashboard() {
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   padding: '12px',
-                  background: 'var(--bg-subtle)',
+                  background: 'rgba(0, 0, 0, 0.02)',
                   borderRadius: '10px',
                 }}
               >
@@ -314,7 +314,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="admin-card glass-panel" style={{ padding: '24px', flex: 1 }}>
+        <div className="admin-card glass-card" style={{ padding: '24px', flex: 1 }}>
           <h3 style={{ marginBottom: '16px', fontSize: '1rem', fontWeight: 600 }}>
             Последние регистрации
           </h3>
@@ -327,7 +327,7 @@ export default function AdminDashboard() {
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   padding: '12px',
-                  background: 'var(--bg-subtle)',
+                  background: 'rgba(0, 0, 0, 0.02)',
                   borderRadius: '10px',
                 }}
               >

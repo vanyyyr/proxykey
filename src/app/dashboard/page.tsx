@@ -7,14 +7,10 @@ function countryFlag(iso2: string | null | undefined): string {
   if (!iso2) return '\u{1F310}';
   const code = iso2.toUpperCase();
   const offset = 127397;
-  try {
-    return String.fromCodePoint(...[...code].map(c => c.charCodeAt(0) + offset));
-  } catch {
-    return '\u{1F310}';
-  }
+  try { return String.fromCodePoint(...[...code].map(c => c.charCodeAt(0) + offset)); }
+  catch { return '\u{1F310}'; }
 }
 
-/* ─── Telegram Login Widget ─── */
 function TelegramWidget() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState(false);
@@ -22,7 +18,6 @@ function TelegramWidget() {
   useEffect(() => {
     if (!containerRef.current) return;
     containerRef.current.innerHTML = '';
-
     const script = document.createElement('script');
     script.src = 'https://telegram.org/js/telegram-widget.js?22';
     script.async = true;
@@ -31,63 +26,31 @@ function TelegramWidget() {
     script.setAttribute('data-radius', '12');
     script.setAttribute('data-request-access', 'write');
     script.setAttribute('data-auth-url', `${window.location.origin}/api/auth/telegram/callback`);
-
     script.onerror = () => setError(true);
     containerRef.current.appendChild(script);
-
     const timer = setTimeout(() => {
-      if (containerRef.current && containerRef.current.children.length > 0) {
-        const iframe = containerRef.current.querySelector('iframe');
-        if (!iframe) setError(true);
-      }
+      if (containerRef.current && !containerRef.current.querySelector('iframe')) setError(true);
     }, 5000);
-
     return () => clearTimeout(timer);
   }, []);
 
-  if (error) {
-    return (
-      <div style={{
-        padding: '16px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)',
-        textAlign: 'center'
-      }}>
-        <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
-          Виджет не загрузился
-        </p>
-        <a href="https://t.me/proxytgkeybot" target="_blank" rel="noopener noreferrer"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '10px 20px', background: '#0088cc', color: '#fff',
-            borderRadius: 'var(--radius-pill)', textDecoration: 'none',
-            fontWeight: 600, fontSize: '0.8125rem'
-          }}>
-          Открыть @proxytgkeybot
-        </a>
-      </div>
-    );
-  }
-
-  return (
-    <div ref={containerRef} style={{
-      minHeight: 50, display: 'flex', alignItems: 'center', justifyContent: 'center'
-    }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        color: 'var(--text-tertiary)', fontSize: '0.8125rem'
-      }}>
-        <div style={{
-          width: 16, height: 16, border: '2px solid var(--separator)',
-          borderTopColor: 'var(--accent)', borderRadius: '50%',
-          animation: 'spin 0.7s linear infinite'
-        }} />
-        Загрузка...
-      </div>
+  if (error) return (
+    <div style={{ padding: 16, background: 'rgba(0,0,0,0.03)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
+      <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: 12 }}>Виджет не загрузился</p>
+      <a href="https://t.me/proxytgkeybot" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: '#0088cc', color: '#fff', borderRadius: 'var(--radius-pill)', textDecoration: 'none', fontWeight: 600, fontSize: '0.8125rem' }}>Открыть @proxytgkeybot</a>
     </div>
   );
+
+  return <div ref={containerRef} style={{ minHeight: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>
+      <div style={{ width: 16, height: 16, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+      Загрузка...
+    </div>
+  </div>;
 }
 
 /* ─── Buy Modal ─── */
-function BuyProxyModal({ onClose, onBuy }: { onClose: () => void; onBuy: (params: any) => void }) {
+function BuyProxyModal({ onClose, onBuy }: { onClose: () => void; onBuy: (p: any) => void }) {
   const [country, setCountry] = useState('');
   const [period, setPeriod] = useState(30);
   const [count, setCount] = useState(1);
@@ -97,105 +60,76 @@ function BuyProxyModal({ onClose, onBuy }: { onClose: () => void; onBuy: (params
   const [availableCount, setAvailableCount] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch('/api/proxy/countries')
-      .then(r => r.json())
-      .then(d => {
-        if (d.countries) {
-          setCountries(d.countries);
-          const firstCountry = Object.keys(d.countries)[0];
-          if (firstCountry) setCountry(firstCountry);
-        }
-      })
-      .catch(() => {});
+    fetch('/api/proxy/countries').then(r => r.json()).then(d => {
+      if (d.countries) { setCountries(d.countries); const f = Object.keys(d.countries)[0]; if (f) setCountry(f); }
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
     if (!country) return;
-    fetch(`/api/proxy/count?country=${country}`)
-      .then(r => r.json())
-      .then(d => { if (d.success) setAvailableCount(d.count); })
-      .catch(() => setAvailableCount(null));
+    fetch(`/api/proxy/count?country=${country}`).then(r => r.json()).then(d => { if (d.success) setAvailableCount(d.count); }).catch(() => setAvailableCount(null));
   }, [country]);
 
-  const PRICES: Record<number, Record<number, number>> = {
-    4: { 7: 50, 14: 90, 30: 180, 60: 320, 90: 430 },
-    3: { 7: 25, 14: 45, 30: 90, 60: 160, 90: 220 },
-    6: { 3: 10, 7: 15, 14: 30, 30: 50, 60: 85, 90: 120 },
-  };
+  const PRICES: Record<number, Record<number, number>> = { 4: { 7: 50, 14: 90, 30: 180, 60: 320, 90: 430 }, 3: { 7: 25, 14: 45, 30: 90, 60: 160, 90: 220 }, 6: { 3: 10, 7: 15, 14: 30, 30: 50, 60: 85, 90: 120 } };
   const prices = PRICES[version] || PRICES[4];
   const perProxy = prices[period] || prices[30];
   const total = perProxy * count;
 
-  const VERSION_LABELS: Record<number, string> = { 4: 'IPv4', 3: 'IPv4 Shared', 6: 'IPv6' };
-
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-panel" onClick={e => e.stopPropagation()}>
-        <h2 className="modal-title">Купить прокси</h2>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20, animation: 'fadeIn 0.2s var(--ease-out)' }} onClick={onClose}>
+      <div className="glass-modal" onClick={e => e.stopPropagation()} style={{ padding: 32, maxWidth: 440, width: '100%', animation: 'scaleIn 0.3s var(--ease-out)' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 24 }}>Купить прокси</h2>
 
-        <label className="modal-field">
-          <span className="modal-label">Страна</span>
+        <label style={{ display: 'block', marginBottom: 16 }}>
+          <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Страна</span>
           <select value={country} onChange={e => setCountry(e.target.value)} className="form-input">
-            {Object.entries(countries).map(([code, name]) => (
-              <option key={code} value={code}>{name}</option>
-            ))}
+            {Object.entries(countries).map(([code, name]) => <option key={code} value={code}>{name}</option>)}
           </select>
         </label>
 
-        <label className="modal-field">
-          <span className="modal-label">Тип</span>
-          <div className="period-pills">
+        <label style={{ display: 'block', marginBottom: 16 }}>
+          <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Тип</span>
+          <div style={{ display: 'flex', gap: 6 }}>
             {[{ v: 4, l: 'IPv4' }, { v: 3, l: 'Shared' }, { v: 6, l: 'IPv6' }].map(t => (
-              <button key={t.v} onClick={() => setVersion(t.v)} className={`pill ${version === t.v ? 'pill-active' : ''}`}>
+              <button key={t.v} onClick={() => setVersion(t.v)} style={{ flex: 1, padding: 8, borderRadius: 8, border: version === t.v ? '1px solid var(--accent)' : '1px solid var(--border)', background: version === t.v ? 'var(--accent-light)' : 'transparent', color: version === t.v ? 'var(--accent)' : 'var(--text-secondary)', fontSize: '0.8125rem', fontWeight: version === t.v ? 600 : 500, cursor: 'pointer', transition: 'all var(--transition-fast)', textAlign: 'center' }}>
                 {t.l}
               </button>
             ))}
           </div>
         </label>
 
-        <label className="modal-field">
-          <span className="modal-label">Период</span>
-          <div className="period-pills">
+        <label style={{ display: 'block', marginBottom: 16 }}>
+          <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Период</span>
+          <div style={{ display: 'flex', gap: 6 }}>
             {(version === 6 ? [3, 7, 14, 30, 60, 90] : [7, 14, 30, 60, 90]).map(d => (
-              <button key={d} onClick={() => setPeriod(d)} className={`pill ${period === d ? 'pill-active' : ''}`}>
+              <button key={d} onClick={() => setPeriod(d)} style={{ flex: 1, padding: 8, borderRadius: 8, border: period === d ? '1px solid var(--accent)' : '1px solid var(--border)', background: period === d ? 'var(--accent-light)' : 'transparent', color: period === d ? 'var(--accent)' : 'var(--text-secondary)', fontSize: '0.8125rem', fontWeight: period === d ? 600 : 500, cursor: 'pointer', transition: 'all var(--transition-fast)', textAlign: 'center' }}>
                 {d}д
               </button>
             ))}
           </div>
         </label>
 
-        <label className="modal-field">
-          <div className="modal-label-row">
-            <span className="modal-label">Количество</span>
+        <label style={{ display: 'block', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Количество</span>
             {availableCount !== null && (
-              <span className={`modal-count ${availableCount === 0 ? 'modal-count-empty' : ''}`}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 500, color: availableCount === 0 ? 'var(--error)' : 'var(--success)' }}>
                 {availableCount === 0 ? 'Нет в наличии' : `Доступно: ${availableCount}`}
               </span>
             )}
           </div>
-          <input type="number" min={1} max={100} value={count}
-            onChange={e => setCount(Math.max(1, parseInt(e.target.value) || 1))}
-            className="form-input" />
+          <input type="number" min={1} max={100} value={count} onChange={e => setCount(Math.max(1, parseInt(e.target.value) || 1))} className="form-input" />
         </label>
 
-        <div className="modal-price">
-          <span className="modal-price-label">Стоимость</span>
-          <span className="modal-price-value">{total} \u20BD</span>
-          {count > 1 && <span className="modal-price-detail">{perProxy} \u20BD \u00D7 {count}</span>}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 20, background: 'rgba(0,0,0,0.02)', borderRadius: 'var(--radius-md)', marginBottom: 20 }}>
+          <span style={{ fontSize: '0.6875rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500 }}>Стоимость</span>
+          <span style={{ fontSize: '2rem', fontWeight: 700, letterSpacing: '-0.03em', marginTop: 4 }}>{total} \u20BD</span>
+          {count > 1 && <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: 2 }}>{perProxy} \u20BD \u00D7 {count}</span>}
         </div>
 
-        <div className="modal-actions">
+        <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={onClose} className="btn-secondary" style={{ flex: 1 }}>Отмена</button>
-          <button
-            disabled={loading || (availableCount !== null && count > availableCount && availableCount > 0)}
-            onClick={async () => {
-              setLoading(true);
-              await onBuy({ count, period, country, version, type: 'http' });
-              setLoading(false);
-            }}
-            className="btn-primary"
-            style={{ flex: 1 }}
-          >
+          <button disabled={loading || (availableCount !== null && count > availableCount && availableCount > 0)} onClick={async () => { setLoading(true); await onBuy({ count, period, country, version, type: 'http' }); setLoading(false); }} className="btn-primary" style={{ flex: 1 }}>
             {loading ? 'Покупка...' : `Купить за ${total} \u20BD`}
           </button>
         </div>
@@ -217,57 +151,46 @@ function TopUpModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (m
   ];
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-panel" onClick={e => e.stopPropagation()}>
-        <h2 className="modal-title">Пополнить баланс</h2>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20, animation: 'fadeIn 0.2s var(--ease-out)' }} onClick={onClose}>
+      <div className="glass-modal" onClick={e => e.stopPropagation()} style={{ padding: 32, maxWidth: 440, width: '100%', animation: 'scaleIn 0.3s var(--ease-out)' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 24 }}>Пополнить баланс</h2>
 
-        <div className="modal-amount-input">
-          <input type="number" min={10} value={amount}
-            onChange={e => setAmount(Math.max(10, parseInt(e.target.value) || 10))}
-            className="amount-input" />
-          <span className="amount-currency">\u20BD</span>
+        <div style={{ position: 'relative', marginBottom: 12 }}>
+          <input type="number" min={10} value={amount} onChange={e => setAmount(Math.max(10, parseInt(e.target.value) || 10))} style={{ width: '100%', background: 'rgba(0,0,0,0.03)', border: '1px solid var(--border)', color: 'var(--text-primary)', padding: '16px 48px 16px 16px', borderRadius: 'var(--radius-md)', fontSize: '1.5rem', fontWeight: 700, textAlign: 'center', outline: 'none' }} />
+          <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: '1.25rem', color: 'var(--text-tertiary)' }}>\u20BD</span>
         </div>
 
-        <div className="amount-presets">
+        <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
           {[100, 300, 500, 1000].map(a => (
-            <button key={a} onClick={() => setAmount(a)} className={`pill ${amount === a ? 'pill-active' : ''}`}>
+            <button key={a} onClick={() => setAmount(a)} style={{ flex: 1, padding: 8, borderRadius: 8, border: amount === a ? '1px solid var(--accent)' : '1px solid var(--border)', background: amount === a ? 'var(--accent-light)' : 'transparent', color: amount === a ? 'var(--accent)' : 'var(--text-secondary)', fontSize: '0.8125rem', fontWeight: amount === a ? 600 : 500, cursor: 'pointer', textAlign: 'center' }}>
               {a}\u20BD
             </button>
           ))}
         </div>
 
-        <div className="pay-methods">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
           {methods.map(m => (
-            <button key={m.id} onClick={() => setPayMethod(m.id)}
-              className={`pay-method ${payMethod === m.id ? 'pay-method-active' : ''}`}>
-              <span className="pay-icon">{m.icon}</span>
-              <div>
-                <div style={{ fontWeight: 500 }}>{m.label}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{m.desc}</div>
-              </div>
+            <button key={m.id} onClick={() => setPayMethod(m.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 'var(--radius-md)', border: payMethod === m.id ? '1px solid var(--accent)' : '1px solid var(--border)', background: payMethod === m.id ? 'var(--accent-light)' : 'transparent', color: 'var(--text-primary)', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer', textAlign: 'left' }}>
+              <span style={{ fontSize: '1.125rem' }}>{m.icon}</span>
+              <div><div>{m.label}</div><div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{m.desc}</div></div>
             </button>
           ))}
         </div>
 
-        <div className="modal-actions">
+        <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={onClose} className="btn-secondary" style={{ flex: 1 }}>Отмена</button>
           <button onClick={async () => {
             setLoading(true);
             try {
-              const res = await fetch('/api/payment/create', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount, method: payMethod })
-              });
+              const res = await fetch('/api/payment/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount, method: payMethod }) });
               const data = await res.json();
               if (!res.ok) { onSuccess(`Ошибка: ${data.error}`); setLoading(false); return; }
               if (data.paymentUrl) { window.location.href = data.paymentUrl; return; }
-              onSuccess('Счёт создан. Проверьте Telegram.');
-              onClose();
+              onSuccess('Счёт создан. Проверьте Telegram.'); onClose();
             } catch (err: any) { onSuccess(`Ошибка: ${err.message}`); }
             setLoading(false);
           }} disabled={loading} className="btn-primary" style={{ flex: 1 }}>
-            {loading ? 'Оформление...' : `Оплатить ${amount} \u20BD`}
+            {loading ? '...' : `Оплатить ${amount} \u20BD`}
           </button>
         </div>
       </div>
@@ -288,32 +211,20 @@ export default function ClientDashboard() {
   const [copiedProxy, setCopiedProxy] = useState<string | null>(null);
 
   const fetchUserData = useCallback(() => {
-    fetch('/api/user/me')
-      .then(res => { if (!res.ok) throw new Error(); return res.json(); })
+    fetch('/api/user/me').then(res => { if (!res.ok) throw new Error(); return res.json(); })
       .then(data => { setUser(data.user); setKeys(data.keys || []); })
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
-
-    fetch('/api/user/partner')
-      .then(res => { if (!res.ok) throw new Error(); return res.json(); })
-      .then(setPartnerData)
-      .catch(() => setPartnerData(null));
+      .catch(() => setUser(null)).finally(() => setLoading(false));
+    fetch('/api/user/partner').then(res => { if (!res.ok) throw new Error(); return res.json(); })
+      .then(setPartnerData).catch(() => setPartnerData(null));
   }, []);
 
   useEffect(() => { fetchUserData(); }, [fetchUserData]);
 
-  const showNotif = (msg: string) => {
-    setNotification(msg);
-    setTimeout(() => setNotification(null), 3000);
-  };
+  const showNotif = (msg: string) => { setNotification(msg); setTimeout(() => setNotification(null), 3000); };
 
   const handleBuy = async (params: any) => {
     try {
-      const res = await fetch('/api/proxy/buy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params)
-      });
+      const res = await fetch('/api/proxy/buy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(params) });
       const data = await res.json();
       if (!res.ok) { showNotif(`Ошибка: ${data.error}`); return; }
       showNotif(`Куплено ${data.proxies?.length || 0} прокси`);
@@ -324,202 +235,96 @@ export default function ClientDashboard() {
 
   const copyProxy = (text: string, id: string) => {
     navigator.clipboard.writeText(text).catch(() => {});
-    setCopiedProxy(id);
-    setTimeout(() => setCopiedProxy(null), 2000);
+    setCopiedProxy(id); setTimeout(() => setCopiedProxy(null), 2000);
   };
 
-  /* ─── Loading ─── */
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{
-          width: 32, height: 32,
-          border: '2.5px solid var(--separator)',
-          borderTopColor: 'var(--accent)',
-          borderRadius: '50%',
-          animation: 'spin 0.7s linear infinite'
-        }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+  if (loading) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 32, height: 32, border: '2.5px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+    </div>
+  );
+
+  /* ─── LOGIN ─── */
+  if (!user) return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32, background: 'var(--bg)' }}>
+      <Link href="/" style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.03em', textDecoration: 'none', color: 'var(--text-primary)', marginBottom: 40 }}>
+        Proxy<span style={{ color: 'var(--accent)' }}>Key</span>
+      </Link>
+      <div className="glass-card animate-scale-in" style={{ padding: '48px 40px', maxWidth: 420, width: '100%', textAlign: 'center' }}>
+        <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>{'\u{1F512}'}</div>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 8 }}>Вход в кабинет</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem', marginBottom: 28 }}>Авторизуйтесь через Telegram</p>
+        <TelegramWidget />
+        <p style={{ marginTop: 28, fontSize: '0.75rem', color: 'var(--text-tertiary)', lineHeight: 1.6 }}>
+          Нажимая кнопку входа, вы соглашаетесь<br />с правилами использования сервиса
+        </p>
       </div>
-    );
-  }
-
-  /* ─── LOGIN SCREEN ─── */
-  if (!user) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-        {/* Logo */}
-        <Link href="/" style={{
-          fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.03em',
-          textDecoration: 'none', color: 'var(--text-primary)', marginBottom: 40
-        }}>
-          Proxy<span style={{ color: 'var(--accent)' }}>Key</span>
-        </Link>
-
-        {/* Card */}
-        <div style={{
-          background: 'var(--bg-elevated)', border: '1px solid var(--separator)',
-          borderRadius: 'var(--radius-xl)', padding: '48px 40px',
-          maxWidth: 420, width: '100%', textAlign: 'center',
-          boxShadow: 'var(--shadow-lg)', animation: 'scaleIn 0.5s var(--ease-out) both'
-        }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>{'\u{1F512}'}</div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 8 }}>
-            Вход в кабинет
-          </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem', marginBottom: 28 }}>
-            Авторизуйтесь через Telegram
-          </p>
-
-          <TelegramWidget />
-
-          <p style={{ marginTop: 28, fontSize: '0.75rem', color: 'var(--text-tertiary)', lineHeight: 1.6 }}>
-            Нажимая кнопку входа, вы соглашаетесь
-            <br />с правилами использования сервиса
-          </p>
-        </div>
-
-        <style>{`
-          @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-          @keyframes spin { to { transform: rotate(360deg); } }
-        `}</style>
-      </div>
-    );
-  }
+    </div>
+  );
 
   /* ─── DASHBOARD ─── */
   return (
-    <div style={{ minHeight: '100vh' }}>
-      {/* Toast */}
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       {notification && (
-        <div style={{
-          position: 'fixed', top: 68, left: '50%', transform: 'translateX(-50%)',
-          padding: '10px 20px', background: 'var(--text-primary)', color: 'var(--bg)',
-          borderRadius: 'var(--radius-pill)', zIndex: 1000, fontWeight: 500,
-          fontSize: '0.8125rem', boxShadow: 'var(--shadow-lg)',
-          animation: 'toastIn 0.3s var(--ease-out)'
-        }}>{notification}</div>
+        <div style={{ position: 'fixed', top: 68, left: '50%', transform: 'translateX(-50%)', padding: '10px 20px', background: 'var(--text-primary)', color: '#fff', borderRadius: 'var(--radius-pill)', zIndex: 1000, fontWeight: 500, fontSize: '0.8125rem', boxShadow: 'var(--shadow-lg)', animation: 'fadeDown 0.3s var(--ease-out)' }}>
+          {notification}
+        </div>
       )}
 
       {showBuyModal && <BuyProxyModal onClose={() => setShowBuyModal(false)} onBuy={handleBuy} />}
-      {showTopUpModal && <TopUpModal onClose={() => setShowTopUpModal(false)}
-        onSuccess={msg => { showNotif(msg); fetchUserData(); }} />}
+      {showTopUpModal && <TopUpModal onClose={() => setShowTopUpModal(false)} onSuccess={msg => { showNotif(msg); fetchUserData(); }} />}
 
-      {/* ─── Header ─── */}
-      <header style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(251, 251, 253, 0.72)',
-        backdropFilter: 'saturate(180%) blur(20px)',
-        WebkitBackdropFilter: 'saturate(180%) blur(20px)',
-        borderBottom: '1px solid var(--separator)'
-      }}>
-        <div style={{
-          maxWidth: 1100, margin: '0 auto', display: 'flex',
-          alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 24px', height: 52
-        }}>
-          <Link href="/" style={{
-            fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.03em',
-            textDecoration: 'none', color: 'var(--text-primary)'
-          }}>
+      {/* Header */}
+      <nav className="glass-nav">
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', height: 52 }}>
+          <Link href="/" style={{ fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.03em', textDecoration: 'none', color: 'var(--text-primary)' }}>
             Proxy<span style={{ color: 'var(--accent)' }}>Key</span>
           </Link>
-
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginRight: 4 }}>
-              <span style={{ fontSize: '0.625rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500 }}>
-                Баланс
-              </span>
-              <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--accent)', letterSpacing: '-0.01em' }}>
-                {user.balance} \u20BD
-              </span>
+              <span style={{ fontSize: '0.625rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500 }}>Баланс</span>
+              <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--accent)', letterSpacing: '-0.01em' }}>{user.balance} \u20BD</span>
             </div>
-            <button onClick={() => setShowTopUpModal(true)} className="btn-ghost" style={{ padding: '7px 16px', fontSize: '0.8125rem' }}>
-              Пополнить
-            </button>
-            <button onClick={() => setShowBuyModal(true)} className="btn-primary" style={{ padding: '7px 16px', fontSize: '0.8125rem' }}>
-              Купить прокси
-            </button>
+            <button onClick={() => setShowTopUpModal(true)} className="btn-ghost btn-sm">Пополнить</button>
+            <button onClick={() => setShowBuyModal(true)} className="btn-primary btn-sm">Купить прокси</button>
           </div>
         </div>
-      </header>
+      </nav>
 
-      {/* ─── Content ─── */}
-      <div style={{
-        maxWidth: 1100, margin: '0 auto', padding: '32px 24px 80px',
-        display: 'flex', gap: 24, alignItems: 'flex-start'
-      }}>
+      {/* Content */}
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px 80px', display: 'flex', gap: 24, alignItems: 'flex-start' }}>
 
-        {/* ─── Main ─── */}
+        {/* Main */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            marginBottom: 24
-          }}>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.03em' }}>
-              Мои прокси
-            </h1>
-            <button onClick={() => setShowBuyModal(true)} className="btn-primary" style={{ padding: '7px 16px', fontSize: '0.8125rem' }}>
-              + Купить
-            </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.03em' }}>Мои прокси</h1>
+            <button onClick={() => setShowBuyModal(true)} className="btn-primary btn-sm">+ Купить</button>
           </div>
 
           {keys.length === 0 ? (
-            <div style={{
-              textAlign: 'center', padding: '64px 32px',
-              background: 'var(--bg-elevated)', border: '1px solid var(--separator)',
-              borderRadius: 'var(--radius-xl)',
-              animation: 'fadeUp 0.6s var(--ease-out) both'
-            }}>
+            <div className="glass-card animate-fade-up" style={{ textAlign: 'center', padding: '64px 32px' }}>
               <div style={{ fontSize: '3rem', marginBottom: 16, opacity: 0.5 }}>{'\u{1F310}'}</div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: 8, letterSpacing: '-0.02em' }}>
-                Нет активных прокси
-              </h2>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: 24 }}>
-                Приобретите прокси для безопасного доступа к сети
-              </p>
-              <button onClick={() => setShowBuyModal(true)} className="btn-primary" style={{ padding: '12px 28px' }}>
-                Купить первый прокси
-              </button>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: 8, letterSpacing: '-0.02em' }}>Нет активных прокси</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: 24 }}>Приобретите прокси для безопасного доступа к сети</p>
+              <button onClick={() => setShowBuyModal(true)} className="btn-primary">Купить первый прокси</button>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {keys.map((key, i) => (
-                <div key={key.id} style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '16px 20px', background: 'var(--bg-elevated)',
-                  border: '1px solid var(--separator)', borderRadius: 'var(--radius-md)',
-                  transition: 'all 0.2s var(--ease-out)',
-                  animation: `fadeUp 0.5s var(--ease-out) ${i * 0.05}s both`
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--separator-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--separator)'; e.currentTarget.style.boxShadow = 'none'; }}
-                >
+                <div key={key.id} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderRadius: 'var(--radius-lg)', animation: `fadeUp 0.5s var(--ease-out) ${i * 0.05}s both` }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
                       <span style={{ fontSize: '1.25rem' }}>{countryFlag(key.country)}</span>
-                      <span style={{
-                        padding: '2px 8px', background: 'var(--accent-subtle)', color: 'var(--accent)',
-                        borderRadius: 'var(--radius-pill)', fontSize: '0.6875rem', fontWeight: 600
-                      }}>{key.protocol || 'HTTP'}</span>
-                      <span style={{ fontFamily: 'SF Mono, Menlo, monospace', fontSize: '0.875rem', fontWeight: 500 }}>
-                        {key.ip}:{key.port}
-                      </span>
+                      <span style={{ padding: '2px 8px', background: 'var(--accent-light)', color: 'var(--accent)', borderRadius: 'var(--radius-pill)', fontSize: '0.6875rem', fontWeight: 600 }}>{key.protocol || 'HTTP'}</span>
+                      <span style={{ fontFamily: 'SF Mono, Menlo, monospace', fontSize: '0.875rem', fontWeight: 500 }}>{key.ip}:{key.port}</span>
                     </div>
                     <div style={{ display: 'flex', gap: 16, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                      <span>Логин: <code style={{
-                        fontFamily: 'SF Mono, Menlo, monospace', fontSize: '0.75rem',
-                        background: 'var(--bg-subtle)', padding: '1px 5px', borderRadius: 4
-                      }}>{key.login}</code></span>
-                      <span>Пароль: <code style={{
-                        fontFamily: 'SF Mono, Menlo, monospace', fontSize: '0.75rem',
-                        background: 'var(--bg-subtle)', padding: '1px 5px', borderRadius: 4
-                      }}>{key.password}</code></span>
+                      <span>Логин: <code style={{ fontFamily: 'SF Mono, Menlo, monospace', fontSize: '0.75rem', background: 'rgba(0,0,0,0.03)', padding: '1px 5px', borderRadius: 4 }}>{key.login}</code></span>
+                      <span>Пароль: <code style={{ fontFamily: 'SF Mono, Menlo, monospace', fontSize: '0.75rem', background: 'rgba(0,0,0,0.03)', padding: '1px 5px', borderRadius: 4 }}>{key.password}</code></span>
                       {key.expiresAt && <span>До: {new Date(key.expiresAt).toLocaleDateString('ru-RU')}</span>}
                     </div>
                   </div>
-                  <button onClick={() => copyProxy(`${key.ip}:${key.port}:${key.login}:${key.password}`, key.id)}
-                    className="btn-ghost" style={{ padding: '7px 16px', fontSize: '0.8125rem', whiteSpace: 'nowrap' }}>
+                  <button onClick={() => copyProxy(`${key.ip}:${key.port}:${key.login}:${key.password}`, key.id)} className="btn-ghost btn-sm" style={{ whiteSpace: 'nowrap' }}>
                     {copiedProxy === key.id ? '\u2713 Скопировано' : 'Копировать'}
                   </button>
                 </div>
@@ -528,83 +333,40 @@ export default function ClientDashboard() {
           )}
         </div>
 
-        {/* ─── Sidebar ─── */}
+        {/* Sidebar */}
         <div style={{ width: 280, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-          {/* Profile */}
-          <div style={{
-            background: 'var(--bg-elevated)', border: '1px solid var(--separator)',
-            borderRadius: 'var(--radius-lg)', padding: 20,
-            animation: 'fadeUp 0.6s var(--ease-out) 0.1s both'
-          }}>
-            <h3 style={{
-              fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-tertiary)',
-              textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 16
-            }}>Профиль</h3>
-
+          <div className="glass-card animate-fade-up delay-2" style={{ padding: 20, borderRadius: 'var(--radius-lg)' }}>
+            <h3 style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 16 }}>Профиль</h3>
             {[
-              { label: 'Имя', value: user.name || '\u2014' },
-              { label: 'Telegram', value: `@${user.username || '\u2014'}` },
-              { label: 'Баланс', value: `${user.balance} \u20BD`, color: 'var(--accent)', bold: true },
-              { label: 'Прокси', value: String(keys.length), bold: true },
-            ].map((row, i) => (
+              { l: 'Имя', v: user.name || '\u2014' },
+              { l: 'Telegram', v: `@${user.username || '\u2014'}` },
+              { l: 'Баланс', v: `${user.balance} \u20BD`, c: 'var(--accent)', b: true },
+              { l: 'Прокси', v: String(keys.length), b: true },
+            ].map((r, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0' }}>
-                <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>{row.label}</span>
-                <span style={{
-                  fontSize: '0.8125rem', color: row.color || 'inherit',
-                  fontWeight: row.bold ? 700 : 400
-                }}>{row.value}</span>
+                <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>{r.l}</span>
+                <span style={{ fontSize: '0.8125rem', color: r.c || 'inherit', fontWeight: r.b ? 700 : 400 }}>{r.v}</span>
               </div>
             ))}
-
-            <button onClick={() => setShowTopUpModal(true)} className="btn-primary"
-              style={{ width: '100%', justifyContent: 'center', marginTop: 16, padding: '10px' }}>
-              Пополнить баланс
-            </button>
+            <button onClick={() => setShowTopUpModal(true)} className="btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 16, padding: 10 }}>Пополнить баланс</button>
           </div>
 
-          {/* Partner */}
           {partnerData && (
-            <div style={{
-              background: 'var(--bg-elevated)', border: '1px solid var(--separator)',
-              borderRadius: 'var(--radius-lg)', padding: 20,
-              animation: 'fadeUp 0.6s var(--ease-out) 0.2s both'
-            }}>
-              <h3 style={{
-                fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-tertiary)',
-                textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 16
-              }}>Партнёрская программа</h3>
-
+            <div className="glass-card animate-fade-up delay-3" style={{ padding: 20, borderRadius: 'var(--radius-lg)' }}>
+              <h3 style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 16 }}>Партнёрская программа</h3>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
                 <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Рефералов</span>
                 <span style={{ fontSize: '0.8125rem', fontWeight: 700 }}>{partnerData.referralsCount}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
                 <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Заработано</span>
-                <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--success)' }}>
-                  {partnerData.partner.earnedBalance} \u20BD
-                </span>
+                <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--success)' }}>{partnerData.partner.earnedBalance} \u20BD</span>
               </div>
-
               <div style={{ marginTop: 12 }}>
-                <span style={{
-                  display: 'block', fontSize: '0.6875rem', fontWeight: 600,
-                  color: 'var(--text-tertiary)', textTransform: 'uppercase',
-                  letterSpacing: '0.04em', marginBottom: 6
-                }}>Реферальная ссылка</span>
+                <span style={{ display: 'block', fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>Реферальная ссылка</span>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <input type="text" value={partnerData.referralLink} readOnly
-                    style={{
-                      flex: 1, padding: '8px 12px', borderRadius: 8,
-                      border: '1px solid var(--separator)', background: 'var(--bg-subtle)',
-                      color: 'var(--text-primary)', fontSize: '0.75rem',
-                      fontFamily: 'SF Mono, Menlo, monospace', outline: 'none', minWidth: 0
-                    }} />
-                  <button onClick={() => {
-                    navigator.clipboard.writeText(partnerData.referralLink).catch(() => {});
-                    setCopiedRef(true);
-                    setTimeout(() => setCopiedRef(false), 2000);
-                  }} className="btn-ghost" style={{ padding: '8px 12px', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                  <input type="text" value={partnerData.referralLink} readOnly className="form-input" style={{ fontSize: '0.75rem', fontFamily: 'SF Mono, Menlo, monospace', padding: '8px 12px' }} />
+                  <button onClick={() => { navigator.clipboard.writeText(partnerData.referralLink).catch(() => {}); setCopiedRef(true); setTimeout(() => setCopiedRef(false), 2000); }} className="btn-ghost btn-sm" style={{ whiteSpace: 'nowrap' }}>
                     {copiedRef ? '\u2713' : 'Копировать'}
                   </button>
                 </div>
@@ -612,42 +374,21 @@ export default function ClientDashboard() {
             </div>
           )}
 
-          {/* Logout */}
-          <button onClick={async () => {
-            await fetch('/api/user/logout', { method: 'POST' }).catch(() => {});
-            document.cookie = 'user_session=; Max-Age=0; path=/;';
-            window.location.reload();
-          }} className="btn-ghost" style={{
-            width: '100%', justifyContent: 'center',
-            color: 'var(--error)', marginTop: 8, padding: '10px'
-          }}>
+          <button onClick={async () => { await fetch('/api/user/logout', { method: 'POST' }).catch(() => {}); document.cookie = 'user_session=; Max-Age=0; path=/;'; window.location.reload(); }} className="btn-ghost" style={{ width: '100%', justifyContent: 'center', color: 'var(--error)', marginTop: 8, padding: 10 }}>
             Выйти
           </button>
         </div>
       </div>
 
-      {/* Animations */}
       <style>{`
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        @keyframes toastIn {
-          from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
-          to { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-        @media (prefers-color-scheme: dark) {
-          header { background: rgba(0, 0, 0, 0.72) !important; }
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeDown { from { opacity: 0; transform: translateX(-50%) translateY(-8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
         @media (max-width: 768px) {
-          .dash-content { flex-direction: column-reverse !important; }
+          div[style*="display: flex"][style*="gap: 24px"][style*="align-items: flex-start"] { flex-direction: column-reverse; }
+          div[style*="width: 280px"] { width: 100% !important; }
         }
       `}</style>
     </div>

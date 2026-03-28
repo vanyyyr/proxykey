@@ -82,18 +82,18 @@ export default function UsersAdmin() {
     <div className="users-page">
       {/* Stats */}
       <div className="flex-row" style={{ marginBottom: '32px' }}>
-        <div className="admin-card glass-panel" style={{ padding: '32px', textAlign: 'center' }}>
+        <div className="admin-card glass-card" style={{ padding: '32px', textAlign: 'center' }}>
           <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Пользователей в системе</div>
           <div style={{ fontSize: '3rem', fontWeight: 700, letterSpacing: '-0.04em' }}>{stats.totalUsers}</div>
         </div>
-        <div className="admin-card glass-panel" style={{ padding: '32px', textAlign: 'center' }}>
+        <div className="admin-card glass-card" style={{ padding: '32px', textAlign: 'center' }}>
           <div style={{ color: 'var(--success)', fontSize: '0.875rem', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>С положительным балансом</div>
           <div style={{ fontSize: '3rem', fontWeight: 700, color: 'var(--success)', letterSpacing: '-0.04em' }}>{stats.positiveBalanceUsers}</div>
         </div>
       </div>
 
       {/* Users Table */}
-      <div className="admin-card glass-panel" style={{ padding: '32px' }}>
+      <div className="admin-card glass-card" style={{ padding: '32px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
           <input 
             type="text" 
@@ -127,7 +127,7 @@ export default function UsersAdmin() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{ 
                           width: '32px', height: '32px', borderRadius: '50%', 
-                          background: 'var(--bg-subtle)', display: 'flex', 
+                          background: 'rgba(0, 0, 0, 0.02)', display: 'flex', 
                           alignItems: 'center', justifyContent: 'center',
                           color: '#fff', fontWeight: 'bold', fontSize: '10px'
                         }}>
@@ -203,7 +203,7 @@ export default function UsersAdmin() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
           onClick={() => setBalanceModal(null)}
         >
-          <div className="glass-panel" style={{ padding: '32px', maxWidth: '420px', width: '100%', borderRadius: '20px', background: 'var(--bg)' }}
+          <div className="glass-card" style={{ padding: '32px', maxWidth: '420px', width: '100%', borderRadius: '20px', background: 'var(--bg)' }}
             onClick={e => e.stopPropagation()}
           >
             <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '8px' }}>💰 Изменить баланс</h3>
@@ -219,7 +219,7 @@ export default function UsersAdmin() {
                 value={balanceAmount}
                 onChange={e => setBalanceAmount(e.target.value)}
                 placeholder="Например: 100 или -50"
-                style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid var(--separator)', background: 'var(--bg-subtle)', color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600 }}
+                style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'rgba(0, 0, 0, 0.02)', color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600 }}
               />
             </label>
 
@@ -231,7 +231,7 @@ export default function UsersAdmin() {
                   onClick={() => setBalanceAmount(String(amt))}
                   style={{ 
                     padding: '6px 14px', borderRadius: '8px', 
-                    border: '1px solid var(--separator)', background: 'transparent',
+                    border: '1px solid var(--border)', background: 'transparent',
                     color: 'var(--success)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600
                   }}
                 >
@@ -244,7 +244,7 @@ export default function UsersAdmin() {
                   onClick={() => setBalanceAmount(String(amt))}
                   style={{ 
                     padding: '6px 14px', borderRadius: '8px',
-                    border: '1px solid var(--separator)', background: 'transparent',
+                    border: '1px solid var(--border)', background: 'transparent',
                     color: 'var(--error)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600
                   }}
                 >

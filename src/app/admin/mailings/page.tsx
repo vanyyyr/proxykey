@@ -68,7 +68,7 @@ export default function MailingsAdmin() {
       <h1 className="section-title">✉️ Массовые рассылки</h1>
       
       <div className="flex-row">
-        <div className="admin-card glass-panel" style={{ padding: '24px', flex: 1 }}>
+        <div className="admin-card glass-card" style={{ padding: '24px', flex: 1 }}>
           <h2 className="section-title" style={{ fontSize: '1.1rem' }}>Фильтры аудитории</h2>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -117,7 +117,7 @@ export default function MailingsAdmin() {
           )}
         </div>
 
-        <div className="admin-card glass-panel" style={{ padding: '24px', flex: 1 }}>
+        <div className="admin-card glass-card" style={{ padding: '24px', flex: 1 }}>
           <h2 className="section-title" style={{ fontSize: '1.1rem' }}>Текст рассылки</h2>
           <textarea 
             className="form-textarea" 
@@ -128,7 +128,7 @@ export default function MailingsAdmin() {
           />
 
           {statusMsg && (
-            <div style={{ padding: '12px', marginTop: '16px', borderRadius: '8px', background: 'var(--bg-subtle)' }}>
+            <div style={{ padding: '12px', marginTop: '16px', borderRadius: '8px', background: 'rgba(0, 0, 0, 0.02)' }}>
               {statusMsg}
             </div>
           )}

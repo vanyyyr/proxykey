@@ -43,7 +43,7 @@ export default function AdminLogin() {
       justifyContent: 'center',
       padding: '20px'
     }}>
-      <div className="glass-panel" style={{
+      <div className="glass-card" style={{
         width: '100%',
         maxWidth: '400px',
         padding: '40px',
