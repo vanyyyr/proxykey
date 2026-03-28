@@ -11,9 +11,10 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
 
     const hash = searchParams.get('hash');
+    console.log('[TG Callback] Hash:', hash ? 'present' : 'missing');
+
     if (!hash) {
-      // Redirect to dashboard if no auth data
-      return NextResponse.redirect(new URL('/dashboard', req.url));
+      return NextResponse.redirect(new URL('/dashboard?error=no_hash', req.url));
     }
 
     // Build data object from query params
@@ -21,19 +22,22 @@ export async function GET(req: NextRequest) {
     searchParams.forEach((value, key) => {
       if (key !== 'hash') userData[key] = value;
     });
+    console.log('[TG Callback] UserData:', JSON.stringify(userData));
 
     // Validate hash
     const dataCheckArr = Object.keys(userData)
       .sort()
       .map(key => `${key}=${userData[key]}`);
     const dataCheckString = dataCheckArr.join('\n');
+    console.log('[TG Callback] DataCheckString:', dataCheckString);
 
     const secretKey = crypto.createHash('sha256').update(BOT_TOKEN).digest();
     const hmac = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+    console.log('[TG Callback] Expected:', hmac, 'Got:', hash);
 
     if (hmac !== hash) {
-      console.error('Invalid Telegram hash');
-      return NextResponse.redirect(new URL('/dashboard?error=invalid_auth', req.url));
+      console.error('[TG Callback] Invalid hash');
+      return NextResponse.redirect(new URL('/dashboard?error=invalid_hash', req.url));
     }
 
     // Check expiration (24 hours)
@@ -46,6 +50,7 @@ export async function GET(req: NextRequest) {
     const telegramId = userData.id;
     const username = userData.username || null;
     const name = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || 'Без имени';
+    console.log('[TG Callback] User:', telegramId, username, name);
 
     let user = await db.user.findUnique({ where: { telegramId } });
 
@@ -53,15 +58,18 @@ export async function GET(req: NextRequest) {
       user = await db.user.create({
         data: { telegramId, username, name, balance: 0, verificationsCount: 0 },
       });
+      console.log('[TG Callback] Created user:', user.id);
     } else {
       user = await db.user.update({
         where: { id: user.id },
         data: { username, name },
       });
+      console.log('[TG Callback] Updated user:', user.id);
     }
 
     // Create session
     const token = await signToken({ userId: user.id, role: user.role });
+    console.log('[TG Callback] Token created, redirecting to dashboard');
 
     const response = NextResponse.redirect(new URL('/dashboard', req.url));
     response.cookies.set('user_session', token, {
@@ -74,7 +82,7 @@ export async function GET(req: NextRequest) {
 
     return response;
   } catch (error: unknown) {
-    console.error('Telegram callback error:', error);
+    console.error('[TG Callback] Error:', error);
     return NextResponse.redirect(new URL('/dashboard?error=server', req.url));
   }
 }

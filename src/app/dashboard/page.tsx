@@ -21,7 +21,6 @@ function TelegramWidget() {
 
   useEffect(() => {
     if (!containerRef.current) return;
-    // Remove any existing children
     containerRef.current.innerHTML = '';
 
     const script = document.createElement('script');
@@ -32,32 +31,10 @@ function TelegramWidget() {
     script.setAttribute('data-radius', '12');
     script.setAttribute('data-request-access', 'write');
     script.setAttribute('data-auth-url', `${window.location.origin}/api/auth/telegram/callback`);
-    script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-
-    (window as any).onTelegramAuth = async (user: any) => {
-      try {
-        const res = await fetch('/api/auth/telegram/callback', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(user),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.redirect) {
-            window.location.href = data.redirect;
-          } else {
-            window.location.reload();
-          }
-        }
-      } catch (e) {
-        console.error('Auth error:', e);
-      }
-    };
 
     script.onerror = () => setError(true);
     containerRef.current.appendChild(script);
 
-    // Timeout fallback
     const timer = setTimeout(() => {
       if (containerRef.current && containerRef.current.children.length > 0) {
         const iframe = containerRef.current.querySelector('iframe');
