@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 
 function countryFlag(iso2: string | null | undefined): string {
@@ -12,41 +12,103 @@ function countryFlag(iso2: string | null | undefined): string {
 }
 
 function TelegramWidget() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [waiting, setWaiting] = useState(false);
+  const [pollToken, setPollToken] = useState('');
 
+  const handleLogin = async () => {
+    setLoading(true);
+    try {
+      // Step 1: Generate login token
+      const res = await fetch('/api/auth/telegram/start', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) { setLoading(false); return; }
+
+      const { token, botUrl } = data;
+      setPollToken(token);
+
+      // Step 2: Open Telegram bot in a new window
+      window.open(botUrl, '_blank', 'width=400,height=600');
+
+      // Step 3: Start polling for auth
+      setWaiting(true);
+      setLoading(false);
+    } catch (e) {
+      console.error('Login error:', e);
+      setLoading(false);
+    }
+  };
+
+  // Poll for authentication
   useEffect(() => {
-    if (!containerRef.current) return;
-    containerRef.current.innerHTML = '';
-    const script = document.createElement('script');
-    script.src = 'https://telegram.org/js/telegram-widget.js?22';
-    script.async = true;
-    script.setAttribute('data-telegram-login', 'proxytgkeybot');
-    script.setAttribute('data-size', 'large');
-    script.setAttribute('data-radius', '12');
-    script.setAttribute('data-request-access', 'write');
-    script.setAttribute('data-auth-url', `${window.location.origin}/api/auth/telegram/callback`);
-    script.onerror = () => setError(true);
-    containerRef.current.appendChild(script);
-    const timer = setTimeout(() => {
-      if (containerRef.current && !containerRef.current.querySelector('iframe')) setError(true);
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, []);
+    if (!pollToken || !waiting) return;
 
-  if (error) return (
-    <div style={{ padding: 16, background: 'rgba(0,0,0,0.03)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
-      <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: 12 }}>Виджет не загрузился</p>
-      <a href="https://t.me/proxytgkeybot" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: '#0088cc', color: '#fff', borderRadius: 'var(--radius-pill)', textDecoration: 'none', fontWeight: 600, fontSize: '0.8125rem' }}>Открыть @proxytgkeybot</a>
-    </div>
+    const checkAuth = async () => {
+      try {
+        const res = await fetch(`/api/auth/telegram/poll?token=${pollToken}`);
+        const data = await res.json();
+        if (data.authenticated) {
+          // Redirect to callback to set cookie
+          window.location.href = data.redirect;
+        }
+      } catch {}
+    };
+
+    const interval = setInterval(checkAuth, 2000);
+    checkAuth();
+
+    // Stop after 120 seconds
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      setWaiting(false);
+      setPollToken('');
+    }, 120000);
+
+    return () => { clearInterval(interval); clearTimeout(timeout); };
+  }, [pollToken, waiting]);
+
+  if (waiting) {
+    return (
+      <div style={{ textAlign: 'center' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+          padding: 20, background: 'rgba(0,136,204,0.06)', borderRadius: 'var(--radius-md)', marginBottom: 16
+        }}>
+          <div style={{ width: 20, height: 20, border: '2.5px solid var(--border)', borderTopColor: '#0088cc', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+          <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Ожидание авторизации...</span>
+        </div>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginBottom: 12 }}>
+          Откройте бота @proxytgkeybot и нажмите «Начать»
+        </p>
+        <button onClick={() => { setWaiting(false); setPollToken(''); }} style={{ fontSize: '0.75rem', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+          Отмена
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={handleLogin}
+      disabled={loading}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 10,
+        padding: '14px 32px', background: '#0088cc', color: '#fff',
+        borderRadius: 'var(--radius-pill)', border: 'none',
+        fontWeight: 600, fontSize: '1rem', cursor: 'pointer',
+        boxShadow: '0 4px 16px rgba(0,136,204,0.25), inset 0 1px 0 rgba(255,255,255,0.2)',
+        transition: 'all 0.2s var(--ease-out)',
+        width: '100%', justifyContent: 'center',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(0,136,204,0.35)'; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,136,204,0.25)'; }}
+    >
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.568 8.16l-1.776 8.368c-.133.595-.488.74-.992.46l-2.74-2.018-1.324 1.276c-.147.147-.27.27-.554.27l.198-2.816 5.126-4.632c.223-.198-.049-.306-.345-.109l-6.34 3.988-2.728-.85c-.594-.186-.606-.594.124-.878l10.656-4.11c.493-.178.926.12.76.87z"/>
+      </svg>
+      {loading ? 'Загрузка...' : 'Войти через Telegram'}
+    </button>
   );
-
-  return <div ref={containerRef} style={{ minHeight: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>
-      <div style={{ width: 16, height: 16, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-      Загрузка...
-    </div>
-  </div>;
 }
 
 /* ─── Buy Modal ─── */

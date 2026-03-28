@@ -5,16 +5,48 @@ import { signToken } from '@/lib/auth';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
-// GET — callback from Telegram Login Widget (data-auth-url)
+// GET — handles both:
+// 1. Telegram Login Widget callback (with hash param)
+// 2. Bot deep link callback (with token param)
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
 
-    const hash = searchParams.get('hash');
-    console.log('[TG Callback] Hash:', hash ? 'present' : 'missing');
+    // ─── Bot deep link flow: ?token=xxx ───
+    const token = searchParams.get('token');
+    if (token) {
+      // Check if the bot has authenticated this token
+      const setting = await db.settings.findUnique({
+        where: { key: `login_${token}` },
+      });
 
+      if (!setting || setting.value === 'pending') {
+        // Token not yet authenticated — redirect to dashboard with waiting status
+        return NextResponse.redirect(new URL('/dashboard?waiting=1', req.url));
+      }
+
+      // Token is authenticated — value is the session JWT
+      const sessionToken = setting.value;
+
+      // Clean up the login token
+      await db.settings.delete({ where: { key: `login_${token}` } }).catch(() => {});
+
+      // Set session cookie and redirect
+      const response = NextResponse.redirect(new URL('/dashboard', req.url));
+      response.cookies.set('user_session', sessionToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30,
+        path: '/',
+      });
+      return response;
+    }
+
+    // ─── Telegram Login Widget callback: ?hash=xxx ───
+    const hash = searchParams.get('hash');
     if (!hash) {
-      return NextResponse.redirect(new URL('/dashboard?error=no_hash', req.url));
+      return NextResponse.redirect(new URL('/dashboard', req.url));
     }
 
     // Build data object from query params
@@ -22,25 +54,21 @@ export async function GET(req: NextRequest) {
     searchParams.forEach((value, key) => {
       if (key !== 'hash') userData[key] = value;
     });
-    console.log('[TG Callback] UserData:', JSON.stringify(userData));
 
     // Validate hash
     const dataCheckArr = Object.keys(userData)
       .sort()
       .map(key => `${key}=${userData[key]}`);
     const dataCheckString = dataCheckArr.join('\n');
-    console.log('[TG Callback] DataCheckString:', dataCheckString);
 
     const secretKey = crypto.createHash('sha256').update(BOT_TOKEN).digest();
     const hmac = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
-    console.log('[TG Callback] Expected:', hmac, 'Got:', hash);
 
     if (hmac !== hash) {
-      console.error('[TG Callback] Invalid hash');
       return NextResponse.redirect(new URL('/dashboard?error=invalid_hash', req.url));
     }
 
-    // Check expiration (24 hours)
+    // Check expiration
     const authDate = parseInt(userData.auth_date, 10);
     if (Date.now() / 1000 - authDate > 86400) {
       return NextResponse.redirect(new URL('/dashboard?error=auth_expired', req.url));
@@ -50,7 +78,6 @@ export async function GET(req: NextRequest) {
     const telegramId = userData.id;
     const username = userData.username || null;
     const name = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || 'Без имени';
-    console.log('[TG Callback] User:', telegramId, username, name);
 
     let user = await db.user.findUnique({ where: { telegramId } });
 
@@ -58,21 +85,17 @@ export async function GET(req: NextRequest) {
       user = await db.user.create({
         data: { telegramId, username, name, balance: 0, verificationsCount: 0 },
       });
-      console.log('[TG Callback] Created user:', user.id);
     } else {
       user = await db.user.update({
         where: { id: user.id },
         data: { username, name },
       });
-      console.log('[TG Callback] Updated user:', user.id);
     }
 
-    // Create session
-    const token = await signToken({ userId: user.id, role: user.role });
-    console.log('[TG Callback] Token created, redirecting to dashboard');
+    const sessionToken = await signToken({ userId: user.id, role: user.role });
 
     const response = NextResponse.redirect(new URL('/dashboard', req.url));
-    response.cookies.set('user_session', token, {
+    response.cookies.set('user_session', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -84,72 +107,5 @@ export async function GET(req: NextRequest) {
   } catch (error: unknown) {
     console.error('[TG Callback] Error:', error);
     return NextResponse.redirect(new URL('/dashboard?error=server', req.url));
-  }
-}
-
-// POST — direct auth from script widget (data-onauth)
-export async function POST(req: NextRequest) {
-  try {
-    const data = await req.json();
-    const { hash, ...userData } = data;
-
-    if (!hash) {
-      return NextResponse.json({ error: 'Missing hash' }, { status: 400 });
-    }
-
-    // Validate hash
-    const dataCheckArr = Object.keys(userData)
-      .sort()
-      .map(key => `${key}=${userData[key]}`);
-    const dataCheckString = dataCheckArr.join('\n');
-
-    const secretKey = crypto.createHash('sha256').update(BOT_TOKEN).digest();
-    const hmac = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
-
-    if (hmac !== hash) {
-      return NextResponse.json({ error: 'Invalid hash' }, { status: 403 });
-    }
-
-    const authDate = parseInt(String(userData.auth_date), 10);
-    if (Date.now() / 1000 - authDate > 86400) {
-      return NextResponse.json({ error: 'Auth expired' }, { status: 403 });
-    }
-
-    const telegramId = String(userData.id);
-    let user = await db.user.findUnique({ where: { telegramId } });
-
-    if (!user) {
-      user = await db.user.create({
-        data: {
-          telegramId,
-          username: (userData.username as string) || null,
-          name: `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || 'Без имени',
-        },
-      });
-    } else {
-      user = await db.user.update({
-        where: { id: user.id },
-        data: {
-          username: (userData.username as string) || user.username,
-          name: `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || user.name,
-        },
-      });
-    }
-
-    const token = await signToken({ userId: user.id, role: user.role });
-
-    const response = NextResponse.json({ success: true, redirect: '/dashboard' });
-    response.cookies.set('user_session', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30,
-      path: '/',
-    });
-
-    return response;
-  } catch (error: unknown) {
-    console.error('Telegram auth error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
