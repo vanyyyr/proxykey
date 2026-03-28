@@ -12,58 +12,86 @@ function countryFlag(iso2: string | null | undefined): string {
 }
 
 function TelegramWidget() {
-  const [loading, setLoading] = useState(false);
-  const [botUrl, setBotUrl] = useState('');
+  const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [showFallback, setShowFallback] = useState(false);
 
-  const handleLogin = async () => {
-    if (botUrl) {
-      window.open(botUrl, '_blank');
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await fetch('/api/auth/telegram/start', { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) { setLoading(false); return; }
-      setBotUrl(data.botUrl);
-      window.open(data.botUrl, '_blank');
-    } catch (e) {
-      console.error('Login error:', e);
-    }
-    setLoading(false);
-  };
+  useEffect(() => {
+    // Load Telegram Login Widget script
+    const script = document.createElement('script');
+    script.src = 'https://telegram.org/js/telegram-widget.js?22';
+    script.async = true;
+    script.setAttribute('data-telegram-login', 'proxytgkeybot');
+    script.setAttribute('data-size', 'large');
+    script.setAttribute('data-radius', '12');
+    script.setAttribute('data-request-access', 'write');
+    script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+
+    // Callback when user authorizes
+    (window as any).onTelegramAuth = async (user: any) => {
+      try {
+        const res = await fetch('/api/auth/telegram/callback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(user),
+        });
+        if (res.ok) {
+          window.location.href = '/dashboard';
+        } else {
+          const data = await res.json();
+          alert('Ошибка авторизации: ' + (data.error || 'Неизвестная ошибка'));
+        }
+      } catch (e) {
+        console.error('Auth error:', e);
+        alert('Ошибка сети');
+      }
+    };
+
+    script.onload = () => setScriptLoaded(true);
+    script.onerror = () => setShowFallback(true);
+    document.getElementById('tg-login-container')?.appendChild(script);
+
+    // Timeout fallback
+    const timer = setTimeout(() => {
+      if (!setScriptLoaded) setShowFallback(true);
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (showFallback) {
+    return (
+      <div style={{ textAlign: 'center' }}>
+        <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
+          Виджет не загрузился
+        </p>
+        <a href="https://t.me/proxytgkeybot" target="_blank" rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '10px 20px', background: '#0088cc', color: '#fff',
+            borderRadius: 'var(--radius-pill)', textDecoration: 'none',
+            fontWeight: 600, fontSize: '0.875rem'
+          }}>
+          Открыть @proxytgkeybot
+        </a>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ textAlign: 'center' }}>
-      <button
-        onClick={handleLogin}
-        disabled={loading}
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: 10,
-          padding: '14px 32px', background: '#0088cc', color: '#fff',
-          borderRadius: 'var(--radius-pill)', border: 'none',
-          fontWeight: 600, fontSize: '1rem', cursor: 'pointer',
-          boxShadow: '0 4px 16px rgba(0,136,204,0.25)',
-          transition: 'all 0.2s var(--ease-out)',
-          width: '100%', justifyContent: 'center',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; }}
-        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-      >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.568 8.16l-1.776 8.368c-.133.595-.488.74-.992.46l-2.74-2.018-1.324 1.276c-.147.147-.27.27-.554.27l.198-2.816 5.126-4.632c.223-.198-.049-.306-.345-.109l-6.34 3.988-2.728-.85c-.594-.186-.606-.594.124-.878l10.656-4.11c.493-.178.926.12.76.87z"/>
-        </svg>
-        {loading ? 'Загрузка...' : 'Войти через Telegram'}
-      </button>
-
-      {botUrl && (
-        <div style={{ marginTop: 16, padding: 16, background: 'rgba(0,136,204,0.06)', borderRadius: 'var(--radius-md)' }}>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
-            Откройте бота и нажмите <strong>«Начать»</strong>
-          </p>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-            После авторизации бот пришлёт ссылку для входа
-          </p>
+    <div>
+      <div id="tg-login-container" style={{
+        display: 'flex', justifyContent: 'center', minHeight: 50
+      }} />
+      {!scriptLoaded && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          padding: 12, color: 'var(--text-tertiary)', fontSize: '0.8125rem'
+        }}>
+          <div style={{
+            width: 16, height: 16, border: '2px solid var(--border)',
+            borderTopColor: 'var(--accent)', borderRadius: '50%',
+            animation: 'spin 0.7s linear infinite'
+          }} />
+          Загрузка...
         </div>
       )}
     </div>

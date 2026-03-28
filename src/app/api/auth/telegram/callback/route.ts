@@ -109,3 +109,68 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard?error=server', req.url));
   }
 }
+
+// POST — from Telegram Login Widget data-onauth callback
+export async function POST(req: NextRequest) {
+  try {
+    const data = await req.json();
+    const { hash, ...userData } = data;
+
+    if (!hash) {
+      return NextResponse.json({ error: 'Missing hash' }, { status: 400 });
+    }
+
+    // Validate hash
+    const dataCheckArr = Object.keys(userData)
+      .sort()
+      .map(key => `${key}=${userData[key]}`);
+    const dataCheckString = dataCheckArr.join('\n');
+
+    const secretKey = crypto.createHash('sha256').update(BOT_TOKEN).digest();
+    const hmac = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+
+    if (hmac !== hash) {
+      return NextResponse.json({ error: 'Invalid hash' }, { status: 403 });
+    }
+
+    // Check expiration (24 hours)
+    const authDate = parseInt(String(userData.auth_date), 10);
+    if (Date.now() / 1000 - authDate > 86400) {
+      return NextResponse.json({ error: 'Auth expired' }, { status: 403 });
+    }
+
+    // Find or create user
+    const telegramId = String(userData.id);
+    const username = (userData.username as string) || null;
+    const name = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || 'Без имени';
+
+    let user = await db.user.findUnique({ where: { telegramId } });
+
+    if (!user) {
+      user = await db.user.create({
+        data: { telegramId, username, name, balance: 0, verificationsCount: 0 },
+      });
+    } else {
+      user = await db.user.update({
+        where: { id: user.id },
+        data: { username, name },
+      });
+    }
+
+    const sessionToken = await signToken({ userId: user.id, role: user.role });
+
+    const response = NextResponse.json({ success: true });
+    response.cookies.set('user_session', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30,
+      path: '/',
+    });
+
+    return response;
+  } catch (error: unknown) {
+    console.error('[TG Callback POST] Error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
