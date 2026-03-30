@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import TelegramLoginWidget from '@/components/TelegramLoginWidget';
 
 function countryFlag(iso2: string | null | undefined): string {
   if (!iso2) return '\u{1F310}';
@@ -168,6 +169,75 @@ function AuthForm({ onAuthenticated }: { onAuthenticated: () => void }) {
         {mode === 'login' ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}
       </button>
     </form>
+  );
+}
+
+function UnifiedAuth({ onAuthenticated }: { onAuthenticated: () => void }) {
+  const [botLoading, setBotLoading] = useState(false);
+  const botInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (botInterval.current) clearInterval(botInterval.current);
+    };
+  }, []);
+
+  const handleBotLogin = async () => {
+    setBotLoading(true);
+    try {
+      const res = await fetch('/api/auth/telegram/start', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.token && data.botUrl) {
+        window.open(data.botUrl, '_blank');
+        botInterval.current = setInterval(async () => {
+          try {
+            const pollRes = await fetch(`/api/auth/telegram/poll?token=${data.token}`);
+            const pollData = await pollRes.json();
+            if (pollData.authenticated) {
+              if (botInterval.current) clearInterval(botInterval.current);
+              onAuthenticated();
+            }
+          } catch (e) {}
+        }, 2000);
+        return;
+      }
+    } catch (e) {}
+    setBotLoading(false);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* 1. Telegram Widget Login */}
+      <div>
+        <TelegramLoginWidget />
+      </div>
+
+      {/* 2. Telegram Bot Login (Alternative) */}
+      <button 
+        onClick={handleBotLogin} 
+        disabled={botLoading}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+          padding: '12px', fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-primary)',
+          cursor: botLoading ? 'wait' : 'pointer'
+        }}
+      >
+        <svg fill="#2AABEE" width="20" height="20" viewBox="0 0 32 32">
+          <path d="M29.919 6.163l-4.225 19.925c-.319 1.406-1.15 1.756-2.331 1.094l-6.438-4.744-3.106 2.988c-.344.344-.631.631-1.294.631l.463-6.556 11.931-10.781c.519-.463-.113-.719-.806-.256l-14.75 9.288-6.35-1.981c-1.381-.431-1.406-1.381.288-2.044l24.838-9.569c1.15-.431 2.15.256 1.781 2.006z"/>
+        </svg>
+        {botLoading ? 'Ожидание авторизации...' : 'Вход через Бота (альтернатива)'}
+      </button>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ flex: 1, height: 1, background: 'var(--border)' }}></div>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 600, letterSpacing: '0.05em' }}>ИЛИ ПО EMAIL</span>
+        <div style={{ flex: 1, height: 1, background: 'var(--border)' }}></div>
+      </div>
+
+      {/* 3. Email Password Login */}
+      <AuthForm onAuthenticated={onAuthenticated} />
+    </div>
   );
 }
 
@@ -376,7 +446,7 @@ export default function ClientDashboard() {
         <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>{'\u{1F511}'}</div>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 8 }}>Личный кабинет</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem', marginBottom: 28 }}>Войдите или создайте аккаунт</p>
-        <AuthForm onAuthenticated={() => window.location.reload()} />
+        <UnifiedAuth onAuthenticated={() => window.location.reload()} />
         <p style={{ marginTop: 28, fontSize: '0.75rem', color: 'var(--text-tertiary)', lineHeight: 1.6 }}>
           Нажимая кнопку, вы соглашаетесь<br />с правилами использования сервиса
         </p>
@@ -446,9 +516,25 @@ export default function ClientDashboard() {
                       {key.expiresAt && <span>До: {new Date(key.expiresAt).toLocaleDateString('ru-RU')}</span>}
                     </div>
                   </div>
-                  <button onClick={() => copyProxy(`${key.ip}:${key.port}:${key.login}:${key.password}`, key.id)} className="btn-ghost btn-sm" style={{ whiteSpace: 'nowrap' }}>
-                    {copiedProxy === key.id ? '\u2713 Скопировано' : 'Копировать'}
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
+                    <button 
+                      onClick={() => {
+                        const isMTProto = key.protocol?.toUpperCase() === 'MTPROTO';
+                        const link = isMTProto 
+                          ? `tg://proxy?server=${key.ip}&port=${key.port}&secret=${key.password}`
+                          : `tg://socks?server=${key.ip}&port=${key.port}&user=${key.login}&pass=${key.password}`;
+                        window.location.href = link;
+                      }}
+                      className="btn-primary btn-sm" style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6, opacity: 0.9 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.6 8.2c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                      </svg>
+                      В Telegram
+                    </button>
+                    <button onClick={() => copyProxy(`${key.ip}:${key.port}:${key.login}:${key.password}`, key.id)} className="btn-ghost btn-sm" style={{ whiteSpace: 'nowrap', width: '100%', fontSize: '0.6875rem', padding: '4px' }}>
+                      {copiedProxy === key.id ? '\u2713 Скопировано' : 'Скопировать IP:Port'}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
