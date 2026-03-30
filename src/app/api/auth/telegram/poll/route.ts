@@ -26,14 +26,20 @@ export async function GET(req: NextRequest) {
     // Token is authenticated — value is the session JWT
     const sessionToken = setting.value;
 
-    // Clean up
+    // Clean up the login token
     await db.settings.delete({ where: { key: `login_${token}` } }).catch(() => {});
 
-    // Return the session token (the client will set it via redirect)
-    return NextResponse.json({
-      authenticated: true,
-      redirect: `/api/auth/telegram/callback?token=${token}`,
+    // Set session cookie directly and return success
+    const response = NextResponse.json({ authenticated: true });
+    response.cookies.set('user_session', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30,
+      path: '/',
     });
+
+    return response;
   } catch (error: unknown) {
     console.error('[Login Poll Error]:', error);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });

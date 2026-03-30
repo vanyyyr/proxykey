@@ -5,6 +5,22 @@ import crypto from 'crypto';
 // Generate a login token and return the Telegram bot URL
 export async function POST() {
   try {
+    // Clean up stale login tokens (older than 10 minutes)
+    // Settings table stores login tokens as key: "login_xxx", value: "pending" or JWT
+    // We check updatedAt to determine staleness
+    try {
+      const staleDate = new Date(Date.now() - 10 * 60 * 1000); // 10 minutes ago
+      await db.settings.deleteMany({
+        where: {
+          key: { startsWith: 'login_' },
+          updatedAt: { lt: staleDate },
+        },
+      });
+    } catch (cleanupError) {
+      // Non-critical, just log
+      console.warn('[Login Cleanup]:', cleanupError);
+    }
+
     // Generate unique token
     const token = crypto.randomBytes(16).toString('hex');
 

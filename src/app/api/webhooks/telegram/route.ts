@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import crypto from 'crypto';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
@@ -11,21 +10,6 @@ async function callTelegramAPI(method: string, body: unknown) {
     body: JSON.stringify(body),
   });
   return res.json();
-}
-
-function validateTelegramData(data: Record<string, unknown>): boolean {
-  const { hash, ...userData } = data;
-  if (!hash || typeof hash !== 'string') return false;
-
-  const dataCheckArr = Object.keys(userData)
-    .sort()
-    .map(key => `${key}=${userData[key]}`);
-  const dataCheckString = dataCheckArr.join('\n');
-
-  const secretKey = crypto.createHash('sha256').update(BOT_TOKEN).digest();
-  const hmac = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
-
-  return hmac === hash;
 }
 
 export async function POST(req: NextRequest) {
@@ -118,10 +102,8 @@ export async function POST(req: NextRequest) {
           const username = from.username || null;
           const name = [from.first_name, from.last_name].filter(Boolean).join(' ') || 'Без имени';
 
-          // Validate telegram data
-          const isValid = validateTelegramData(from);
+          // Find or create user
 
-          // Find or create user (even without full validation for login flow)
           let user = await db.user.findUnique({ where: { telegramId } });
           if (!user) {
             user = await db.user.create({

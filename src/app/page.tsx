@@ -209,7 +209,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div className="glass-card animate-fade-up" style={{ textAlign: 'center', padding: '80px 40px' }}>
             <h2 style={{ fontSize: '2.5rem', fontWeight: 700, letterSpacing: '-0.035em', marginBottom: 12 }}>Готовы начать?</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '1.0625rem', marginBottom: 28 }}>Регистрация за 10 секунд через Telegram. Первый прокси — уже через минуту.</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '1.0625rem', marginBottom: 28 }}>Регистрация за 10 секунд. Первый прокси — уже через минуту.</p>
             <Link href="/dashboard" className="btn-primary" style={{ padding: '16px 32px', fontSize: '1rem' }}>
               Начать пользоваться
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>

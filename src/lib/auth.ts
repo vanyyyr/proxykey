@@ -4,10 +4,10 @@ import { cookies } from 'next/headers';
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-proxykey-2026';
 const secret = new TextEncoder().encode(JWT_SECRET);
 
-export async function signToken(payload: any) {
+export async function signToken(payload: any, expiresIn: string = '30d') {
   const token = await new jose.SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('24h')
+    .setExpirationTime(expiresIn)
     .sign(secret);
   return token;
 }
@@ -24,6 +24,15 @@ export async function verifyToken(token: string) {
 export async function getAdminSession() {
   const cookieStore = await cookies();
   const token = cookieStore.get('admin_token')?.value;
+
+  if (!token) return null;
+
+  return await verifyToken(token);
+}
+
+export async function getUserSession() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('user_session')?.value;
 
   if (!token) return null;
 
